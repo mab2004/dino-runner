@@ -2,7 +2,7 @@ export default class Obstacle {
   constructor(game, type) {
     this.game = game;
     this.type = type;
-    this.x = game.canvas.width + 30;
+    this.x = game.logicalWidth + 30;
     this.passed = false;
 
     if (type === 'cactus') {

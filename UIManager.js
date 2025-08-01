@@ -35,7 +35,7 @@ export default class UIManager {
     // Mute indicator and BGM toggle
     ctx.font = "10px monospace";
     const muteText = this.game.soundOn ? "🔊" : "🔇";
-    const bgmText = this.game.audioManager.bgmEnabled ? "♪" : "♪̸";
+    const bgmText = this.game.audioManager.bgmEnabled ? "♪" : "♬";
     ctx.fillText(muteText + " Press M to toggle sound • " + bgmText + " Press B for music", this.game.logicalWidth/2, 200);
     
     ctx.restore();
