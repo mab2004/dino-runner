@@ -19,6 +19,7 @@ export default class InputHandler {
         if (e.code === 'ArrowDown') this.game.player.duck(true);
       }
       if (e.code === 'KeyM') this.game.toggleSound();
+      if (e.code === 'KeyB') this.game.toggleBgm();
     });
 
     window.addEventListener('keyup', (e) => {

@@ -17,10 +17,14 @@ body {
 
 canvas {
   image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
   background: #f7f7f7;
   max-width: calc(100vw - 40px);
   height: auto;
   outline: none;
+  /* Maintain aspect ratio while scaling */
+  aspect-ratio: 800 / 300;
 }
 
 /* Responsive scaling while maintaining aspect ratio */

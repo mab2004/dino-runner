@@ -5,15 +5,30 @@ export default class ScoreManager {
     this.highScore = this.loadHighScore();
     this.speedLevel = 1;
     this.settings = this.loadSettings();
+    this.framesSinceStart = 0;
   }
 
   reset() {
     this.score = 0;
     this.speedLevel = 1;
+    this.framesSinceStart = 0;
   }
 
   update(dt, speed) {
-    this.score += Math.floor(dt * speed * 1.2);
+    // Increment score per frame/pixel like Chrome dino (more authentic)
+    this.framesSinceStart++;
+    
+    // Score increments based on frames and speed (roughly 1 point per 4-5 frames at base speed)
+    const increment = Math.max(1, Math.floor(speed / 7)); // Scale with speed
+    if (this.framesSinceStart % 4 === 0) {
+      this.score += increment;
+    }
+    
+    // Handle score rollover at 100000
+    if (this.score >= 100000) {
+      this.score = this.score % 100000;
+    }
+    
     if (this.score > this.highScore) {
       this.highScore = this.score;
       this.saveHighScore();
@@ -35,9 +50,9 @@ export default class ScoreManager {
 
   loadSettings() {
     try {
-      return JSON.parse(localStorage.getItem('dino_settings')) || { soundOn: true };
+      return JSON.parse(localStorage.getItem('dino_settings')) || { soundOn: true, bgmEnabled: false };
     } catch {
-      return { soundOn: true };
+      return { soundOn: true, bgmEnabled: false };
     }
   }
 
