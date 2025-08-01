@@ -14,17 +14,11 @@ export default class ScoreManager {
     this.framesSinceStart = 0;
   }
 
-  update(dt, speed) {
-    // Increment score per frame/pixel like Chrome dino (more authentic)
-    this.framesSinceStart++;
+  update(dt, gameSpeed) {
+    // dhhruv's scoring logic from lines 168-170: points += 1 each frame
+    this.score += 1;
     
-    // Score increments based on frames and speed (roughly 1 point per 4-5 frames at base speed)
-    const increment = Math.max(1, Math.floor(speed / 7)); // Scale with speed
-    if (this.framesSinceStart % 4 === 0) {
-      this.score += increment;
-    }
-    
-    // Handle score rollover at 100000
+    // Handle score rollover at 100000 (like Chrome dino)
     if (this.score >= 100000) {
       this.score = this.score % 100000;
     }
@@ -33,7 +27,16 @@ export default class ScoreManager {
       this.highScore = this.score;
       this.saveHighScore();
     }
-    this.speedLevel = Math.floor(this.score / 200) + 1;
+  }
+
+  getFormattedScore() {
+    // dhhruv's score display format - 5-digit zero-padded
+    return this.score.toString().padStart(5, '0');
+  }
+
+  getFormattedHighScore() {
+    // dhhruv's high score display format - 5-digit zero-padded  
+    return this.highScore.toString().padStart(5, '0');
   }
 
   saveHighScore() {

@@ -5,6 +5,7 @@ import InputHandler from './InputHandler.js';
 import ScoreManager from './ScoreManager.js';
 import AudioManager from './AudioManager.js';
 import UIManager from './UIManager.js';
+import AssetManager from './AssetManager.js';
 
 export default class Game {
   constructor(canvas, ctx, logicalWidth, logicalHeight) {
@@ -13,58 +14,74 @@ export default class Game {
     this.logicalWidth = logicalWidth || 800;
     this.logicalHeight = logicalHeight || 300;
     // Game state
-    this.state = 'menu'; // menu, playing, gameover
+    this.state = 'loading'; // loading, menu, playing, gameover
     this.entities = [];
     this.lastTime = 0;
     this.delta = 0;
 
-    // Managers
-    this.audioManager = new AudioManager(this);
-    this.scoreManager = new ScoreManager(this);
-    this.input = new InputHandler(this);
-    this.background = new Background(this);
-    this.player = new Player(this);
+    // Asset manager - must load before initializing other managers
+    this.assetManager = new AssetManager();
+    
+    // Initialize managers (will be set up after assets load)
+    this.audioManager = null;
+    this.scoreManager = null;
+    this.input = null;
+    this.background = null;
+    this.player = null;
     this.obstacles = [];
-    this.ui = new UIManager(this);
+    this.ui = null;
 
-    // Difficulty (Chrome-like)
-    this.baseSpeed = 7;
-    this.speed = this.baseSpeed;
+    // Game speed and difficulty - Based on dhhruv's chromedino.py line 172
+    // dhhruv: game_speed = 20, increments by 1 every 100 points (lines 170-171)
+    this.gameSpeed = 20; // dhhruv starts at game_speed = 20
     this.spawnTimer = 0;
-    this.spawnInterval = 90;
     this.lastMilestone = 0;
     
-    // Day/night cycle
-    this.dayNight = false;
-    this.cycleTimer = 0;
-    this.cycleInterval = 700; // points
-
-    // Initialize sound settings properly
-    const settings = this.scoreManager.getSettings();
-    this.soundOn = settings.soundOn ?? true;
-    this.audioManager.bgmEnabled = settings.bgmEnabled ?? false;
+    // Day/night cycle - removed for now to match dhhruv's simpler approach
     
-    // Apply initial audio state
-    this.audioManager.setMuted(!this.soundOn);
+    // Initialize the game
+    this.initialize();
+  }
 
-    // Bindings
-    this.loop = this.loop.bind(this);
+  async initialize() {
+    // Load all assets first
+    try {
+      await this.assetManager.loadAllAssets();
+      
+      // Now initialize all managers with loaded assets
+      this.audioManager = new AudioManager(this);
+      this.scoreManager = new ScoreManager(this);
+      this.input = new InputHandler(this);
+      this.background = new Background(this);
+      this.player = new Player(this);
+      this.ui = new UIManager(this);
 
-    // Start
-    this.reset();
-    requestAnimationFrame(this.loop);
+      // Initialize sound settings properly
+      const settings = this.scoreManager.getSettings();
+      this.soundOn = settings.soundOn ?? true;
+      this.audioManager.bgmEnabled = settings.bgmEnabled ?? false;
+      
+      // Apply initial audio state
+      this.audioManager.setMuted(!this.soundOn);
+
+      // Ready to start
+      this.state = 'menu';
+      this.reset();
+      
+    } catch (error) {
+      console.error('Failed to initialize game:', error);
+      this.state = 'error';
+    }
   }
 
   reset() {
     this.state = 'menu';
     this.obstacles = [];
-    this.scoreManager.reset();
-    this.player.reset();
-    this.speed = this.baseSpeed;
+    if (this.scoreManager) this.scoreManager.reset();
+    if (this.player) this.player.reset();
+    this.gameSpeed = 20; // dhhruv's initial game_speed
     this.spawnTimer = 0;
-    this.background.reset();
-    this.dayNight = false;
-    this.cycleTimer = 0;
+    if (this.background) this.background.reset();
     this.lastMilestone = 0;
   }
 
@@ -99,63 +116,82 @@ export default class Game {
       this.background.update(dt);
       this.player.update(dt);
 
-      // Spawn obstacles
-      this.spawnTimer -= dt;
-      if (this.spawnTimer <= 0) {
+      // Score update - dhhruv increments points by 1 each frame (chromedino.py line 168-170)
+      // Adjust for 60fps target
+      if (Math.random() < 0.8) { // Roughly 48/60 frames to slow down scoring
+        this.scoreManager.update(dt, this.gameSpeed);
+      }
+      const points = this.scoreManager.score;
+      
+      // Speed progression - dhhruv increases speed by 1 every 100 points (chromedino.py line 170-171)
+      if (points % 100 === 0 && points > this.lastMilestone) {
+        this.gameSpeed += 1;
+        this.lastMilestone = points;
+        if (this.audioManager) this.audioManager.play('milestone');
+      }
+
+      // Spawn obstacles - dhhruv's logic from chromedino.py lines 223-230
+      if (this.obstacles.length === 0) {
         this.spawnObstacle();
-        this.spawnTimer = this.spawnInterval / this.speed * 60 + Math.random() * 40;
       }
 
       // Update obstacles
       for (const obs of this.obstacles) {
-        obs.update(dt, this.speed);
+        obs.update(dt, this.gameSpeed);
       }
-      // Remove off-screen
+      // Remove off-screen obstacles - dhhruv's logic chromedino.py line 206-207
       this.obstacles = this.obstacles.filter(o => !o.isOffScreen());
 
-      // Collision
+      // Collision detection - dhhruv's logic chromedino.py line 231-234
       for (const obs of this.obstacles) {
         if (obs.collides(this.player)) {
           this.gameOver();
           return;
         }
       }
-
-      // Score & Difficulty (Chrome-like progression)
-      this.scoreManager.update(dt, this.speed);
-      const pts = this.scoreManager.score;
-      
-      // Speed increases by ~1 per 100 points (max ~14)
-      const newSpeed = Math.min(this.baseSpeed + Math.floor(pts / 100), 14);
-      if (newSpeed > this.speed) {
-        this.speed = newSpeed;
-      }
-      
-      // Milestone sound every 100 points
-      if (pts > 0 && pts % 100 === 0 && pts !== this.lastMilestone) {
-        this.audioManager.play('milestone');
-        this.lastMilestone = pts;
-      }
-      
-      // Day/night every 700 pts (less frequent)
-      if (Math.floor(pts/700) % 2 !== this.dayNight) {
-        this.dayNight = !this.dayNight;
-        this.background.toggleDayNight(this.dayNight);
-      }
     }
   }
 
   spawnObstacle() {
-    // Random: cactus or pterodactyl (after score 200+)
-    let type = 'cactus';
-    const currentLevel = Math.floor(this.scoreManager.score / 200) + 1;
-    if (currentLevel >= 2 && Math.random() > 0.6) type = 'pterodactyl';
+    // dhhruv's obstacle spawn logic from chromedino.py lines 223-230
+    // Random choice between SmallCactus, LargeCactus, Bird
+    const rand = Math.floor(Math.random() * 3);
+    let type;
+    if (rand === 0) {
+      type = 'smallCactus';
+    } else if (rand === 1) {
+      type = 'largeCactus';
+    } else {
+      type = 'bird';
+    }
     this.obstacles.push(new Obstacle(this, type));
   }
 
   render() {
     // Clear canvas once at the start of each frame (use logical dimensions)
     this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
+    
+    if (this.state === 'loading') {
+      // Show loading screen
+      this.ctx.fillStyle = '#f7f7f7';
+      this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+      this.ctx.fillStyle = '#535353';
+      this.ctx.font = '24px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('Loading assets...', this.logicalWidth / 2, this.logicalHeight / 2);
+      return;
+    }
+
+    if (this.state === 'error') {
+      // Show error screen
+      this.ctx.fillStyle = '#f7f7f7';
+      this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+      this.ctx.fillStyle = '#d93025';
+      this.ctx.font = '24px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('Failed to load assets', this.logicalWidth / 2, this.logicalHeight / 2);
+      return;
+    }
     
     // Draw in proper order
     this.background.draw(this.ctx);

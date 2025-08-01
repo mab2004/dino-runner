@@ -30,4 +30,9 @@ ctx.msImageSmoothingEnabled = false;
 
 // Boot the game with logical dimensions
 const game = new Game(canvas, ctx, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+// Bind the game loop and start it
+game.loop = game.loop.bind(game);
+requestAnimationFrame(game.loop);
+
 window.game = game; // For debugging
