@@ -131,15 +131,21 @@ export default class Game {
   }
 
   render() {
+    // Clear canvas once at the start of each frame
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    // Draw in proper order
     this.background.draw(this.ctx);
 
-    if (this.state === 'menu') {
-      this.ui.drawMenu(this.ctx);
-    } else if (this.state === 'playing') {
+    if (this.state === 'playing') {
+      // Draw obstacles behind player
       for (const obs of this.obstacles) obs.draw(this.ctx);
       this.player.draw(this.ctx);
       this.ui.drawHud(this.ctx);
+    } else if (this.state === 'menu') {
+      this.ui.drawMenu(this.ctx);
     } else if (this.state === 'gameover') {
+      // Draw obstacles and player for context
       for (const obs of this.obstacles) obs.draw(this.ctx);
       this.player.draw(this.ctx);
       this.ui.drawGameOver(this.ctx);

@@ -1,19 +1,18 @@
 import Game from './Game.js';
 
-// Responsive canvas
+// Canvas setup with fixed dimensions (Chrome-like)
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-// Allow dynamic resizing (but keep pixel aspect)
-function resizeCanvas() {
-  const ratio = 300 / 800;
-  let width = Math.min(window.innerWidth - 16, 800);
-  let height = Math.round(width * ratio);
-  canvas.width = width;
-  canvas.height = height;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+// Fixed canvas dimensions like Chrome dino
+canvas.width = 800;
+canvas.height = 300;
+
+// Disable image smoothing for crisp pixel art
+ctx.imageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.msImageSmoothingEnabled = false;
 
 // Boot the game
 const game = new Game(canvas, ctx);

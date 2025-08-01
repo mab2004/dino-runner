@@ -14,58 +14,69 @@ export default class UIManager {
   drawMenu(ctx) {
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.fillStyle = "#1c2636";
-    ctx.globalAlpha = 0.92;
-    ctx.fillRect(this.game.canvas.width/2-170, 40, 340, 220);
+    
+    // Light semi-transparent overlay
+    ctx.fillStyle = "#f7f7f7";
+    ctx.globalAlpha = 0.95;
+    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = "#fff";
-    ctx.font = "32px monospace";
+    
+    // Title
+    ctx.fillStyle = "#535353";
+    ctx.font = "24px monospace";
     ctx.fillText("DINO RUNNER", this.game.canvas.width/2, 100);
-    ctx.font = "18px monospace";
-    ctx.fillText("A Google Chrome Dino Clone", this.game.canvas.width/2, 134);
+    ctx.font = "12px monospace";
+    ctx.fillText("Press SPACE to play", this.game.canvas.width/2, 130);
+    
+    // High score display
+    ctx.font = "14px monospace";
+    ctx.fillText("HI " + String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.canvas.width/2, 170);
+    
+    // Mute indicator
+    ctx.font = "10px monospace";
+    const muteText = this.game.soundOn ? "🔊" : "🔇";
+    ctx.fillText(muteText + " Press M to toggle sound", this.game.canvas.width/2, 200);
+    
+    ctx.restore();
 
     if (this.showingHighScore) {
-      ctx.font = "22px monospace";
-      ctx.fillStyle = "#ffe066";
-      ctx.fillText("High Score", this.game.canvas.width/2, 170);
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = "#f7f7f7";
+      ctx.globalAlpha = 0.95;
+      ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#535353";
       ctx.font = "20px monospace";
-      ctx.fillStyle = "#fff";
-      ctx.fillText(this.game.scoreManager.highScore, this.game.canvas.width/2, 200);
-      ctx.font = "16px monospace";
-      ctx.fillText("Press any key or click to return", this.game.canvas.width/2, 240);
+      ctx.fillText("High Score", this.game.canvas.width/2, 140);
+      ctx.font = "18px monospace";
+      ctx.fillText(String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.canvas.width/2, 170);
+      ctx.font = "12px monospace";
+      ctx.fillText("Press any key to return", this.game.canvas.width/2, 210);
       ctx.restore();
       this.handleMenuReturn();
       return;
     }
+    
     if (this.showingControls) {
-      ctx.font = "20px monospace";
-      ctx.fillStyle = "#ffe066";
-      ctx.fillText("Controls", this.game.canvas.width/2, 170);
-      ctx.font = "17px monospace";
-      ctx.fillStyle = "#fff";
-      ctx.fillText("Jump: Space / Up Arrow / Tap", this.game.canvas.width/2, 200);
-      ctx.fillText("Duck: Down Arrow / Swipe Down", this.game.canvas.width/2, 224);
-      ctx.fillText("Mute: M", this.game.canvas.width/2, 248);
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = "#f7f7f7";
+      ctx.globalAlpha = 0.95;
+      ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#535353";
       ctx.font = "16px monospace";
-      ctx.fillText("Press any key or click to return", this.game.canvas.width/2, 272);
+      ctx.fillText("Controls", this.game.canvas.width/2, 120);
+      ctx.font = "12px monospace";
+      ctx.fillText("↑ or SPACE - Jump", this.game.canvas.width/2, 150);
+      ctx.fillText("↓ - Duck", this.game.canvas.width/2, 170);
+      ctx.fillText("M - Mute", this.game.canvas.width/2, 190);
+      ctx.fillText("Press any key to return", this.game.canvas.width/2, 220);
       ctx.restore();
       this.handleMenuReturn();
       return;
     }
-
-    // Buttons
-    ctx.font = "20px monospace";
-    let y = 170;
-    for (let i=0; i<this.menuButtons.length; i++) {
-      const btn = this.menuButtons[i];
-      let label = typeof btn.label === 'function' ? btn.label() : btn.label;
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(this.game.canvas.width/2-90, y-20, 180, 34);
-      ctx.fillStyle = "#222";
-      ctx.fillText(label, this.game.canvas.width/2, y);
-      y += 44;
-    }
-    ctx.restore();
 
     // Mouse input for menu
     this.handleMenuMouse();
@@ -74,17 +85,9 @@ export default class UIManager {
   handleMenuMouse() {
     if (!this._menuMouseHandler) {
       this._menuMouseHandler = (e) => {
-        const rect = this.game.canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-        let y = 170;
-        for (let i=0; i<this.menuButtons.length; i++) {
-          if (mx >= this.game.canvas.width/2-90 && mx <= this.game.canvas.width/2+90 &&
-              my >= y-20 && my <= y+14) {
-            this.menuButtons[i].action();
-            break;
-          }
-          y += 44;
+        // Start game on any click in menu
+        if (this.game.state === 'menu' && !this.showingHighScore && !this.showingControls) {
+          this.game.startGame();
         }
       };
       this.game.canvas.addEventListener('click', this._menuMouseHandler);
@@ -104,37 +107,49 @@ export default class UIManager {
 
   drawHud(ctx) {
     ctx.save();
-    ctx.font = "18px monospace";
-    ctx.fillStyle = "#222";
-    ctx.globalAlpha = 0.40;
-    ctx.fillRect(20, 10, 220, 38);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = "#ffe066";
-    ctx.fillText("Score: " + this.game.scoreManager.score, 34, 34);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("High: " + this.game.scoreManager.highScore, 160, 34);
-    ctx.fillStyle = "#bbe0fa";
-    ctx.fillText("Speed: " + this.game.level, 270, 34);
+    ctx.font = "12px monospace";
+    ctx.fillStyle = "#535353";
+    ctx.textAlign = "right";
+    
+    // Current score (right aligned, top right)
+    const scoreText = String(this.game.scoreManager.score).padStart(5, '0');
+    ctx.fillText(scoreText, this.game.canvas.width - 20, 25);
+    
+    // High score (right aligned, below current score)
+    ctx.fillText("HI " + String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.canvas.width - 20, 45);
+    
+    // Mute indicator (top left)
+    ctx.textAlign = "left";
+    const muteText = this.game.soundOn ? "🔊" : "🔇";
+    ctx.fillText(muteText, 20, 25);
+    
     ctx.restore();
   }
 
   drawGameOver(ctx) {
     ctx.save();
     ctx.textAlign = "center";
-    ctx.font = "32px monospace";
-    ctx.fillStyle = "#c93030";
-    ctx.globalAlpha = 0.92;
-    ctx.fillRect(this.game.canvas.width/2-170, 80, 340, 130);
+    
+    // Light overlay for game over
+    ctx.fillStyle = "#f7f7f7";
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = "#fff";
-    ctx.fillText("Game Over", this.game.canvas.width/2, 120);
-    ctx.font = "22px monospace";
-    ctx.fillStyle = "#ffe066";
-    ctx.fillText("Score: " + this.game.scoreManager.score, this.game.canvas.width/2, 154);
-    ctx.fillStyle = "#fff";
-    ctx.fillText("High Score: " + this.game.scoreManager.highScore, this.game.canvas.width/2, 182);
-    ctx.font = "18px monospace";
-    ctx.fillText("Click or Space to Play Again", this.game.canvas.width/2, 210);
+    
+    // Game Over text
+    ctx.fillStyle = "#535353";
+    ctx.font = "20px monospace";
+    ctx.fillText("G A M E  O V E R", this.game.canvas.width/2, 120);
+    
+    // Current and high scores
+    ctx.font = "14px monospace";
+    ctx.fillText(String(this.game.scoreManager.score).padStart(5, '0'), this.game.canvas.width/2, 160);
+    ctx.fillText("HI " + String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.canvas.width/2, 180);
+    
+    // Restart instruction
+    ctx.font = "12px monospace";
+    ctx.fillText("Press SPACE to restart", this.game.canvas.width/2, 220);
+    
     ctx.restore();
 
     // Mouse input for replay
