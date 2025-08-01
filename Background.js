@@ -64,6 +64,10 @@ export default class Background {
         this.x_pos_bg = 0;
       }
       // Note: Background position is updated in update() method, not draw()
+    } else {
+      // Fallback ground line if track sprite fails to load
+      ctx.fillStyle = '#535353';
+      ctx.fillRect(0, this.y_pos_bg, this.game.logicalWidth, 4);
     }
 
     // Draw clouds - dhhruv's cloud drawing

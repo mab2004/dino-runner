@@ -32,6 +32,7 @@ export default class Game {
     this.ui = null;
 
     // Game speed and difficulty - Based on dhhruv's chromedino.py line 172
+    // dhhruv: game_speed = 20, increments by 1 every 100 points (lines 170-171)
     this.gameSpeed = 20; // dhhruv starts at game_speed = 20
     this.spawnTimer = 0;
     this.lastMilestone = 0;
@@ -115,21 +116,21 @@ export default class Game {
       this.background.update(dt);
       this.player.update(dt);
 
-      // Score update - dhhruv increments points by 1 each frame (line 168-170)
+      // Score update - dhhruv increments points by 1 each frame (chromedino.py line 168-170)
       // Adjust for 60fps target
       if (Math.random() < 0.8) { // Roughly 48/60 frames to slow down scoring
         this.scoreManager.update(dt, this.gameSpeed);
       }
       const points = this.scoreManager.score;
       
-      // Speed progression - dhhruv increases speed by 1 every 100 points (line 170-171)
+      // Speed progression - dhhruv increases speed by 1 every 100 points (chromedino.py line 170-171)
       if (points % 100 === 0 && points > this.lastMilestone) {
         this.gameSpeed += 1;
         this.lastMilestone = points;
         if (this.audioManager) this.audioManager.play('milestone');
       }
 
-      // Spawn obstacles - dhhruv's logic from lines 223-230
+      // Spawn obstacles - dhhruv's logic from chromedino.py lines 223-230
       if (this.obstacles.length === 0) {
         this.spawnObstacle();
       }
@@ -138,24 +139,21 @@ export default class Game {
       for (const obs of this.obstacles) {
         obs.update(dt, this.gameSpeed);
       }
-      // Remove off-screen obstacles - dhhruv's logic line 206-207
+      // Remove off-screen obstacles - dhhruv's logic chromedino.py line 206-207
       this.obstacles = this.obstacles.filter(o => !o.isOffScreen());
 
-      // Collision detection - dhhruv's logic line 231-234
-      // Temporarily disabled for testing
-      /*
+      // Collision detection - dhhruv's logic chromedino.py line 231-234
       for (const obs of this.obstacles) {
         if (obs.collides(this.player)) {
           this.gameOver();
           return;
         }
       }
-      */
     }
   }
 
   spawnObstacle() {
-    // dhhruv's obstacle spawn logic from lines 223-230
+    // dhhruv's obstacle spawn logic from chromedino.py lines 223-230
     // Random choice between SmallCactus, LargeCactus, Bird
     const rand = Math.floor(Math.random() * 3);
     let type;

@@ -82,6 +82,10 @@ export default class Obstacle {
 
     if (sprite) {
       ctx.drawImage(sprite, this.x, this.y);
+    } else {
+      // Fallback rectangle for debugging
+      ctx.fillStyle = '#535353';
+      ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
     // Uncomment for debugging hitbox

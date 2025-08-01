@@ -1,5 +1,6 @@
 // Asset Manager - handles loading and management of all sprite assets
-// Based on dhhruv's Chrome-Dino-Runner asset structure
+// Based on dhhruv's Chrome-Dino-Runner asset structure from chromedino.py
+// References dhhruv's asset loading from lines 18-45
 export default class AssetManager {
   constructor() {
     this.assets = {};
