@@ -7,9 +7,11 @@ import AudioManager from './AudioManager.js';
 import UIManager from './UIManager.js';
 
 export default class Game {
-  constructor(canvas, ctx) {
+  constructor(canvas, ctx, logicalWidth, logicalHeight) {
     this.canvas = canvas;
     this.ctx = ctx;
+    this.logicalWidth = logicalWidth || 800;
+    this.logicalHeight = logicalHeight || 300;
     // Game state
     this.state = 'menu'; // menu, playing, gameover
     this.entities = [];
@@ -37,7 +39,13 @@ export default class Game {
     this.cycleTimer = 0;
     this.cycleInterval = 700; // points
 
-    this.soundOn = this.scoreManager.getSettings().soundOn ?? true;
+    // Initialize sound settings properly
+    const settings = this.scoreManager.getSettings();
+    this.soundOn = settings.soundOn ?? true;
+    this.audioManager.bgmEnabled = settings.bgmEnabled ?? false;
+    
+    // Apply initial audio state
+    this.audioManager.setMuted(!this.soundOn);
 
     // Bindings
     this.loop = this.loop.bind(this);
@@ -63,12 +71,16 @@ export default class Game {
   startGame() {
     this.reset();
     this.state = 'playing';
-    // No background music in Chrome dino
+    // Start background music if enabled
+    if (this.audioManager.bgmEnabled) {
+      this.audioManager.playBgm();
+    }
   }
 
   gameOver() {
     this.state = 'gameover';
     this.audioManager.play('collision');
+    this.audioManager.stopBgm(); // Stop background music on game over
     this.scoreManager.saveHighScore();
   }
 
@@ -76,6 +88,10 @@ export default class Game {
     this.soundOn = !this.soundOn;
     this.scoreManager.setSettings({ soundOn: this.soundOn });
     this.audioManager.setMuted(!this.soundOn);
+  }
+
+  toggleBgm() {
+    this.audioManager.toggleBgm();
   }
 
   update(dt) {
@@ -130,15 +146,16 @@ export default class Game {
   }
 
   spawnObstacle() {
-    // Random: cactus or pterodactyl (after level 2)
+    // Random: cactus or pterodactyl (after score 200+)
     let type = 'cactus';
-    if (this.level >= 2 && Math.random() > 0.6) type = 'pterodactyl';
+    const currentLevel = Math.floor(this.scoreManager.score / 200) + 1;
+    if (currentLevel >= 2 && Math.random() > 0.6) type = 'pterodactyl';
     this.obstacles.push(new Obstacle(this, type));
   }
 
   render() {
-    // Clear canvas once at the start of each frame
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    // Clear canvas once at the start of each frame (use logical dimensions)
+    this.ctx.clearRect(0, 0, this.logicalWidth, this.logicalHeight);
     
     // Draw in proper order
     this.background.draw(this.ctx);
