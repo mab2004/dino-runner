@@ -55,41 +55,67 @@ export default class Background {
     ctx.fillStyle = this.dayNight ? this.cycleColor[1] : this.cycleColor[0];
     ctx.fillRect(0, 0, this.game.canvas.width, this.game.canvas.height);
 
-    // Clouds
+    // Clouds (more Chrome-like)
     for (const c of this.clouds) {
-      ctx.save();
-      ctx.globalAlpha = this.dayNight ? 0.22 : 0.38;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.ellipse(c.x, c.y, 28, 13, 0, 0, 2*Math.PI);
-      ctx.ellipse(c.x+20, c.y+2, 17, 9, 0, 0, 2*Math.PI);
-      ctx.ellipse(c.x-20, c.y+3, 13, 7, 0, 0, 2*Math.PI);
-      ctx.fill();
-      ctx.restore();
+      this.drawCloud(ctx, c.x, c.y);
     }
 
-    // Sun/Moon
+    // Sun/Moon (more Chrome-like)
     ctx.save();
-    ctx.globalAlpha = 0.70;
-    ctx.beginPath();
+    ctx.globalAlpha = 0.8;
     if (this.sunMoon === 0) {
-      ctx.arc(60, 58, 20, 0, 2*Math.PI);
-      ctx.fillStyle = "#ffe066";
+      // Sun
+      ctx.fillStyle = "#ffcc00";
+      ctx.beginPath();
+      ctx.arc(60, 58, 16, 0, 2*Math.PI);
+      ctx.fill();
     } else {
-      ctx.arc(60, 58, 19, 0, 2*Math.PI);
-      ctx.fillStyle = "#dbe8fa";
+      // Moon (crescent)
+      ctx.fillStyle = "#cccccc";
+      ctx.beginPath();
+      ctx.arc(60, 58, 16, 0, 2*Math.PI);
+      ctx.fill();
+      ctx.fillStyle = this.cycleColor[1];
+      ctx.beginPath();
+      ctx.arc(66, 54, 14, 0, 2*Math.PI);
+      ctx.fill();
     }
-    ctx.fill();
     ctx.restore();
 
-    // Ground
-    for (let x = this.offset; x < this.game.canvas.width; x += 48) {
-      ctx.save();
-      ctx.fillStyle = "#b9b39f";
-      ctx.fillRect(x, this.groundY, 48, 13);
-      ctx.fillStyle = "#8e8872";
-      ctx.fillRect(x, this.groundY+11, 48, 4);
-      ctx.restore();
+    // Ground (Chrome-like bumpy ground)
+    this.drawGround(ctx);
+  }
+
+  drawCloud(ctx, x, y) {
+    ctx.save();
+    ctx.globalAlpha = this.dayNight ? 0.3 : 0.6;
+    ctx.fillStyle = this.dayNight ? "#ffffff" : "#cccccc";
+    
+    // Chrome-style pixelated cloud
+    ctx.fillRect(x + 4, y + 4, 8, 2);
+    ctx.fillRect(x + 2, y + 6, 12, 2);
+    ctx.fillRect(x, y + 8, 16, 2);
+    ctx.fillRect(x + 2, y + 10, 12, 2);
+    ctx.fillRect(x + 4, y + 12, 8, 2);
+    
+    ctx.restore();
+  }
+
+  drawGround(ctx) {
+    const groundColor = "#535353";
+    ctx.fillStyle = groundColor;
+    
+    // Ground line
+    ctx.fillRect(0, this.groundY, this.game.canvas.width, 2);
+    
+    // Ground bumps/details (like Chrome dino)
+    for (let x = Math.floor(this.offset); x < this.game.canvas.width; x += 12) {
+      if (Math.random() > 0.7) {
+        ctx.fillRect(x, this.groundY + 2, 2, 2);
+      }
+      if (Math.random() > 0.8) {
+        ctx.fillRect(x + 6, this.groundY + 2, 2, 2);
+      }
     }
   }
 }

@@ -49,26 +49,94 @@ export default class Obstacle {
   }
 
   draw(ctx) {
+    const obstacleColor = "#535353";
+    
     if (this.type === 'cactus') {
-      // Cactus: placeholder pixel art (green)
-      ctx.save();
-      ctx.fillStyle = ['#1b5b1b', '#328732', '#3ab13a'][this.variant];
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.fillStyle = "#67c867";
-      ctx.fillRect(this.x+4, this.y+6, this.width-8, this.height-8);
-      ctx.restore();
+      this.drawCactus(ctx, obstacleColor);
     } else if (this.type === 'pterodactyl') {
-      // Pterodactyl: placeholder pixel art (gray bird)
-      ctx.save();
-      ctx.fillStyle = "#555";
-      ctx.beginPath();
-      ctx.moveTo(this.x, this.y+this.height/2);
-      ctx.lineTo(this.x+this.width/2, this.y+2 + 8*this.flap);
-      ctx.lineTo(this.x+this.width, this.y+this.height/2);
-      ctx.lineTo(this.x+this.width/2, this.y+this.height-2 - 8*this.flap);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      this.drawPterodactyl(ctx, obstacleColor);
     }
+  }
+
+  drawCactus(ctx, color) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = color;
+    
+    if (this.variant === 0) {
+      // Small single cactus
+      ctx.fillRect(6, 0, 2, this.height);
+      ctx.fillRect(4, this.height-16, 6, 2);
+      ctx.fillRect(2, this.height-14, 10, 2);
+      ctx.fillRect(0, this.height-12, 14, 2);
+      ctx.fillRect(2, this.height-10, 10, 2);
+      ctx.fillRect(4, this.height-8, 6, 2);
+    } else if (this.variant === 1) {
+      // Medium double cactus
+      ctx.fillRect(4, 0, 2, this.height);
+      ctx.fillRect(10, 6, 2, this.height-6);
+      // Left branch
+      ctx.fillRect(2, this.height-20, 6, 2);
+      ctx.fillRect(0, this.height-18, 10, 2);
+      ctx.fillRect(2, this.height-16, 6, 2);
+      // Right branch  
+      ctx.fillRect(8, this.height-14, 6, 2);
+      ctx.fillRect(6, this.height-12, 10, 2);
+      ctx.fillRect(8, this.height-10, 6, 2);
+    } else {
+      // Large triple cactus
+      ctx.fillRect(4, 0, 2, this.height);
+      ctx.fillRect(10, 4, 2, this.height-4);
+      ctx.fillRect(16, 8, 2, this.height-8);
+      // Branches
+      ctx.fillRect(2, this.height-24, 6, 2);
+      ctx.fillRect(0, this.height-22, 10, 2);
+      ctx.fillRect(2, this.height-20, 6, 2);
+      ctx.fillRect(8, this.height-18, 6, 2);
+      ctx.fillRect(6, this.height-16, 10, 2);
+      ctx.fillRect(8, this.height-14, 6, 2);
+      ctx.fillRect(14, this.height-12, 6, 2);
+      ctx.fillRect(12, this.height-10, 10, 2);
+      ctx.fillRect(14, this.height-8, 6, 2);
+    }
+    
+    ctx.restore();
+  }
+
+  drawPterodactyl(ctx, color) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = color;
+    
+    // Body
+    ctx.fillRect(16, 8, 8, 4);
+    ctx.fillRect(12, 10, 16, 2);
+    ctx.fillRect(14, 12, 12, 2);
+    
+    // Head/beak
+    ctx.fillRect(8, 8, 8, 4);
+    ctx.fillRect(4, 10, 4, 2);
+    
+    // Wings (animated)
+    if (this.flap === 0) {
+      // Wings up
+      ctx.fillRect(10, 2, 12, 2);
+      ctx.fillRect(8, 4, 16, 2);
+      ctx.fillRect(6, 6, 20, 2);
+      ctx.fillRect(8, 8, 16, 2);
+    } else {
+      // Wings down
+      ctx.fillRect(8, 10, 16, 2);
+      ctx.fillRect(6, 12, 20, 2);
+      ctx.fillRect(8, 14, 16, 2);
+      ctx.fillRect(10, 16, 12, 2);
+    }
+    
+    // Tail
+    ctx.fillRect(26, 8, 6, 2);
+    ctx.fillRect(28, 6, 4, 2);
+    ctx.fillRect(30, 4, 2, 2);
+    
+    ctx.restore();
   }
 }
