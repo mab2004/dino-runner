@@ -2,43 +2,56 @@ export default class Obstacle {
   constructor(game, type) {
     this.game = game;
     this.type = type;
-    this.x = game.logicalWidth + 30;
+    this.x = game.logicalWidth; // Start at right edge
     this.passed = false;
+    this.variant = 0;
+    this.stepIndex = 0; // For bird animation
 
-    if (type === 'cactus') {
-      this.width = 24 + Math.floor(Math.random()*16);
-      this.height = 40 + Math.floor(Math.random()*12);
-      this.y = 220 + (48-this.height);
-      this.variant = Math.floor(Math.random()*3);
-    } else if (type === 'pterodactyl') {
-      this.width = 46;
-      this.height = 20;
-      // Flying: different heights
-      const flyHeights = [160, 190, 220];
-      this.y = flyHeights[Math.floor(Math.random()*flyHeights.length)];
-      this.variant = Math.floor(Math.random()*2);
-      this.flap = 0;
-      this.animTimer = 0;
+    // dhhruv's obstacle initialization logic
+    if (type === 'smallCactus') {
+      // SmallCactus from lines 131-137
+      this.variant = Math.floor(Math.random() * 3); // 0, 1, or 2
+      this.y = 325 * (300 / 600); // Scale Y position to our coordinate system
+      this.width = 34; // Approximate width
+      this.height = 70; // Approximate height
+    } else if (type === 'largeCactus') {
+      // LargeCactus from lines 140-146
+      this.variant = Math.floor(Math.random() * 3); // 0, 1, or 2  
+      this.y = 300 * (300 / 600); // Scale Y position
+      this.width = 50; // Approximate width
+      this.height = 100; // Approximate height
+    } else if (type === 'bird') {
+      // Bird from lines 149-158
+      this.variant = 0; // Will be used for animation frame
+      // dhhruv's BIRD_HEIGHTS = [250, 290, 320] scaled to our system
+      const birdHeights = [250, 290, 320].map(h => h * (300 / 600));
+      this.y = birdHeights[Math.floor(Math.random() * birdHeights.length)];
+      this.width = 92; // Approximate width
+      this.height = 80; // Approximate height
+      this.animIndex = 0; // For bird wing flapping
     }
   }
 
-  update(dt, speed) {
-    this.x -= speed * dt;
-    if (this.type === 'pterodactyl') {
-      this.animTimer += dt;
-      if (this.animTimer > 12) {
-        this.animTimer = 0;
-        this.flap = (this.flap+1)%2;
+  update(dt, gameSpeed) {
+    // dhhruv's obstacle movement logic line 203-207
+    this.x -= gameSpeed * dt;
+    
+    // Bird animation - dhhruv's logic lines 159-162
+    if (this.type === 'bird') {
+      this.animIndex++;
+      if (this.animIndex >= 9) {
+        this.animIndex = 0;
       }
     }
   }
 
   isOffScreen() {
-    return this.x + this.width < 0;
+    // dhhruv's logic line 206-207: if self.rect.x < -self.rect.width
+    return this.x < -this.width;
   }
 
   collides(player) {
-    // Axis-aligned bounding box
+    // dhhruv's collision detection line 231: player.dino_rect.colliderect(obstacle.rect)
     const hb = player.getHitbox();
     return (
       hb.x < this.x + this.width &&
@@ -49,94 +62,30 @@ export default class Obstacle {
   }
 
   draw(ctx) {
-    const obstacleColor = "#535353";
-    
-    if (this.type === 'cactus') {
-      this.drawCactus(ctx, obstacleColor);
-    } else if (this.type === 'pterodactyl') {
-      this.drawPterodactyl(ctx, obstacleColor);
-    }
-  }
+    const assets = this.game.assetManager;
+    if (!assets.loaded) return; // Don't draw until assets are loaded
 
-  drawCactus(ctx, color) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.fillStyle = color;
+    let sprite = null;
     
-    if (this.variant === 0) {
-      // Small single cactus
-      ctx.fillRect(6, 0, 2, this.height);
-      ctx.fillRect(4, this.height-16, 6, 2);
-      ctx.fillRect(2, this.height-14, 10, 2);
-      ctx.fillRect(0, this.height-12, 14, 2);
-      ctx.fillRect(2, this.height-10, 10, 2);
-      ctx.fillRect(4, this.height-8, 6, 2);
-    } else if (this.variant === 1) {
-      // Medium double cactus
-      ctx.fillRect(4, 0, 2, this.height);
-      ctx.fillRect(10, 6, 2, this.height-6);
-      // Left branch
-      ctx.fillRect(2, this.height-20, 6, 2);
-      ctx.fillRect(0, this.height-18, 10, 2);
-      ctx.fillRect(2, this.height-16, 6, 2);
-      // Right branch  
-      ctx.fillRect(8, this.height-14, 6, 2);
-      ctx.fillRect(6, this.height-12, 10, 2);
-      ctx.fillRect(8, this.height-10, 6, 2);
-    } else {
-      // Large triple cactus
-      ctx.fillRect(4, 0, 2, this.height);
-      ctx.fillRect(10, 4, 2, this.height-4);
-      ctx.fillRect(16, 8, 2, this.height-8);
-      // Branches
-      ctx.fillRect(2, this.height-24, 6, 2);
-      ctx.fillRect(0, this.height-22, 10, 2);
-      ctx.fillRect(2, this.height-20, 6, 2);
-      ctx.fillRect(8, this.height-18, 6, 2);
-      ctx.fillRect(6, this.height-16, 10, 2);
-      ctx.fillRect(8, this.height-14, 6, 2);
-      ctx.fillRect(14, this.height-12, 6, 2);
-      ctx.fillRect(12, this.height-10, 10, 2);
-      ctx.fillRect(14, this.height-8, 6, 2);
+    // dhhruv's sprite selection logic from obstacle draw methods
+    if (this.type === 'smallCactus') {
+      const smallCactusSprites = assets.getSmallCactusSprites();
+      sprite = smallCactusSprites[this.variant];
+    } else if (this.type === 'largeCactus') {
+      const largeCactusSprites = assets.getLargeCactusSprites();
+      sprite = largeCactusSprites[this.variant];
+    } else if (this.type === 'bird') {
+      // dhhruv's bird animation logic from lines 159-162
+      const birdSprites = assets.getBirdSprites();
+      sprite = birdSprites[Math.floor(this.animIndex / 5) % birdSprites.length];
     }
-    
-    ctx.restore();
-  }
 
-  drawPterodactyl(ctx, color) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.fillStyle = color;
-    
-    // Body
-    ctx.fillRect(16, 8, 8, 4);
-    ctx.fillRect(12, 10, 16, 2);
-    ctx.fillRect(14, 12, 12, 2);
-    
-    // Head/beak
-    ctx.fillRect(8, 8, 8, 4);
-    ctx.fillRect(4, 10, 4, 2);
-    
-    // Wings (animated)
-    if (this.flap === 0) {
-      // Wings up
-      ctx.fillRect(10, 2, 12, 2);
-      ctx.fillRect(8, 4, 16, 2);
-      ctx.fillRect(6, 6, 20, 2);
-      ctx.fillRect(8, 8, 16, 2);
-    } else {
-      // Wings down
-      ctx.fillRect(8, 10, 16, 2);
-      ctx.fillRect(6, 12, 20, 2);
-      ctx.fillRect(8, 14, 16, 2);
-      ctx.fillRect(10, 16, 12, 2);
+    if (sprite) {
+      ctx.drawImage(sprite, this.x, this.y);
     }
-    
-    // Tail
-    ctx.fillRect(26, 8, 6, 2);
-    ctx.fillRect(28, 6, 4, 2);
-    ctx.fillRect(30, 4, 2, 2);
-    
-    ctx.restore();
+
+    // Uncomment for debugging hitbox
+    // ctx.strokeStyle = "#f00";
+    // ctx.strokeRect(this.x, this.y, this.width, this.height);
   }
 }

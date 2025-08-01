@@ -1,21 +1,37 @@
 export default class Player {
   constructor(game) {
     this.game = game;
-    this.groundY = 220;
-    this.x = 60;
+    
+    // dhhruv's exact player constants from chromedino.py lines 50-54
+    this.X_POS = 80;
+    this.Y_POS = 310;
+    this.Y_POS_DUCK = 340;
+    this.JUMP_VEL = 8.5;
+    
+    // Convert to our coordinate system (dhhruv uses 600px height, we use 300px)
+    this.x = this.X_POS * (300 / 600); // Scale X position
+    this.groundY = this.Y_POS * (300 / 600); // Scale ground Y
+    this.duckY = this.Y_POS_DUCK * (300 / 600); // Scale duck Y
+    this.jumpVelocity = this.JUMP_VEL; // Keep jump velocity as-is
+    
     this.y = this.groundY;
     this.width = 44;
     this.height = 48;
     this.velocityY = 0;
-    this.gravity = 0.8; // Adjusted for more Chrome-like arc
-    this.jumpVelocity = -15; // Adjusted for more Chrome-like arc
+    this.gravity = 0.8; // dhhruv's gravity from line 97
     this.ducking = false;
     this.grounded = true;
     this.jumpCooldown = 0;
-    this.animFrame = 0;
+    
+    // Animation - dhhruv's step_index logic from lines 55, 74, 85, 91
+    this.stepIndex = 0;
     this.animTimer = 0;
-    this.animSpeed = 8; // Slightly slower animation
-    this.duckHeight = 30;
+    
+    // States matching dhhruv's logic
+    this.dinoRun = true;
+    this.dinoJump = false;
+    this.dinoDuck = false;
+    this.dinoDead = false;
   }
 
   reset() {
@@ -23,14 +39,24 @@ export default class Player {
     this.velocityY = 0;
     this.grounded = true;
     this.ducking = false;
-    this.animFrame = 0;
+    this.stepIndex = 0;
     this.animTimer = 0;
     this.jumpCooldown = 0;
+    
+    // Reset states
+    this.dinoRun = true;
+    this.dinoJump = false;
+    this.dinoDuck = false;
+    this.dinoDead = false;
   }
 
   jump() {
+    // dhhruv's jump logic from lines 65-68
     if (this.grounded && this.jumpCooldown <= 0) {
-      this.velocityY = this.jumpVelocity;
+      this.dinoDuck = false;
+      this.dinoRun = false;
+      this.dinoJump = true;
+      this.velocityY = -this.jumpVelocity; // Negative for upward movement
       this.grounded = false;
       this.jumpCooldown = 12;
       this.game.audioManager.play('jump');
@@ -38,163 +64,89 @@ export default class Player {
   }
 
   duck(isDown) {
-    this.ducking = isDown && this.grounded;
+    // dhhruv's duck logic from lines 69-74
+    if (isDown && !this.dinoJump) {
+      this.dinoDuck = true;
+      this.dinoRun = false;
+      this.dinoJump = false;
+    } else if (!this.dinoJump) {
+      this.dinoDuck = false;
+      this.dinoRun = true;
+      this.dinoJump = false;
+    }
   }
 
   update(dt) {
-    if (!this.grounded) {
-      this.velocityY += this.gravity * dt;
-      this.y += this.velocityY * dt;
-      if (this.y >= this.groundY) {
-        this.y = this.groundY;
-        this.velocityY = 0;
+    // Update animation step index - dhhruv's logic line 66
+    this.stepIndex++;
+    if (this.stepIndex >= 10) {
+      this.stepIndex = 0;
+    }
+
+    // Jump physics - dhhruv's logic lines 95-100  
+    if (this.dinoJump) {
+      this.y -= this.jumpVelocity * 4 * dt; // dhhruv multiplies by 4
+      this.jumpVelocity -= 0.8 * dt; // dhhruv's gravity application
+      
+      if (this.jumpVelocity < -this.JUMP_VEL) {
+        this.dinoJump = false;
+        this.dinoRun = true;
+        this.jumpVelocity = this.JUMP_VEL;
         this.grounded = true;
+        this.y = this.groundY; // Ensure exact ground position
       }
     }
-    if (this.jumpCooldown > 0) this.jumpCooldown -= dt;
 
-    // Animation
-    this.animTimer += dt;
-    if (this.animTimer > this.animSpeed) {
-      this.animTimer = 0;
-      this.animFrame = (this.animFrame + 1) % 2;
+    // Cooldown
+    if (this.jumpCooldown > 0) {
+      this.jumpCooldown -= dt;
     }
   }
 
   getHitbox() {
-    if (this.ducking) {
-      return { x: this.x+6, y: this.y+this.height-this.duckHeight-4, w: this.width-12, h: this.duckHeight };
+    // dhhruv's collision detection uses pygame rect collision
+    // We'll keep similar hitbox logic but adjust for our coordinate system
+    if (this.dinoDuck) {
+      return { x: this.x + 6, y: this.duckY, w: this.width - 12, h: 30 };
     }
-    return { x: this.x+6, y: this.y, w: this.width-12, h: this.height-6 };
+    return { x: this.x + 6, y: this.y, w: this.width - 12, h: this.height - 6 };
   }
 
   draw(ctx) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
+    const assets = this.game.assetManager;
+    if (!assets.loaded) return; // Don't draw until assets are loaded
+
+    let sprite = null;
     
-    // Chrome dino colors
-    const dinoColor = "#535353";
-    
-    if (this.ducking) {
-      // Ducking dino sprite
-      this.drawDuckingDino(ctx, dinoColor);
+    // dhhruv's sprite selection logic from lines 76-94
+    if (this.dinoDuck) {
+      // Duck animation - dhhruv's logic line 76-78  
+      const duckSprites = assets.getDinoDuckSprites();
+      sprite = duckSprites[Math.floor(this.stepIndex / 5) % duckSprites.length];
+    } else if (this.dinoRun) {
+      // Run animation - dhhruv's logic line 85-87
+      const runSprites = assets.getDinoRunSprites();
+      sprite = runSprites[Math.floor(this.stepIndex / 5) % runSprites.length];
+    } else if (this.dinoJump) {
+      // Jump sprite - dhhruv's logic line 91
+      sprite = assets.getAsset('dinoJump');
+    } else if (this.dinoDead) {
+      // Dead sprite
+      sprite = assets.getAsset('dinoDead');
     } else {
-      // Running dino sprite
-      this.drawRunningDino(ctx, dinoColor);
+      // Default to start sprite
+      sprite = assets.getAsset('dinoStart');
     }
-    
-    ctx.restore();
+
+    if (sprite) {
+      // Draw at current position - adjust Y position for ducking
+      const drawY = this.dinoDuck ? this.duckY : this.y;
+      ctx.drawImage(sprite, this.x, drawY);
+    }
 
     // Uncomment for debugging hitbox
     // let hb = this.getHitbox();
     // ctx.strokeStyle = "#f00";
     // ctx.strokeRect(hb.x, hb.y, hb.w, hb.h);
-  }
-
-  drawRunningDino(ctx, color) {
-    ctx.fillStyle = color;
-    
-    // Head outline
-    ctx.fillRect(22, 0, 2, 2);
-    ctx.fillRect(20, 2, 6, 2);
-    ctx.fillRect(18, 4, 10, 2);
-    ctx.fillRect(16, 6, 14, 2);
-    ctx.fillRect(16, 8, 16, 2);
-    ctx.fillRect(16, 10, 18, 2);
-    ctx.fillRect(16, 12, 20, 2);
-    ctx.fillRect(18, 14, 20, 2);
-    ctx.fillRect(18, 16, 18, 2);
-    
-    // Eye
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(30, 6, 2, 2);
-    ctx.fillStyle = color;
-    
-    // Mouth
-    ctx.fillRect(16, 18, 14, 2);
-    ctx.fillRect(16, 20, 10, 2);
-    ctx.fillRect(16, 22, 8, 2);
-    
-    // Body
-    ctx.fillRect(16, 24, 6, 2);
-    ctx.fillRect(12, 26, 10, 2);
-    ctx.fillRect(10, 28, 12, 2);
-    ctx.fillRect(8, 30, 14, 2);
-    ctx.fillRect(6, 32, 16, 2);
-    ctx.fillRect(6, 34, 18, 2);
-    ctx.fillRect(6, 36, 18, 2);
-    ctx.fillRect(8, 38, 16, 2);
-    ctx.fillRect(10, 40, 14, 2);
-    
-    // Legs (animated)
-    if (this.grounded) {
-      if (this.animFrame === 0) {
-        // Left leg forward
-        ctx.fillRect(12, 42, 4, 2);
-        ctx.fillRect(12, 44, 6, 2);
-        ctx.fillRect(10, 46, 6, 2);
-        // Right leg back
-        ctx.fillRect(20, 42, 4, 2);
-        ctx.fillRect(20, 44, 4, 2);
-        ctx.fillRect(20, 46, 4, 2);
-      } else {
-        // Right leg forward
-        ctx.fillRect(20, 42, 4, 2);
-        ctx.fillRect(20, 44, 6, 2);
-        ctx.fillRect(22, 46, 6, 2);
-        // Left leg back
-        ctx.fillRect(12, 42, 4, 2);
-        ctx.fillRect(12, 44, 4, 2);
-        ctx.fillRect(12, 46, 4, 2);
-      }
-    } else {
-      // Jumping pose - legs together
-      ctx.fillRect(14, 42, 6, 2);
-      ctx.fillRect(14, 44, 8, 2);
-      ctx.fillRect(14, 46, 8, 2);
-    }
-    
-    // Arms
-    ctx.fillRect(8, 28, 2, 6);
-    ctx.fillRect(6, 30, 2, 4);
-  }
-
-  drawDuckingDino(ctx, color) {
-    ctx.fillStyle = color;
-    
-    // Head (lower position)
-    ctx.fillRect(22, 14, 2, 2);
-    ctx.fillRect(20, 16, 6, 2);
-    ctx.fillRect(18, 18, 10, 2);
-    ctx.fillRect(16, 20, 14, 2);
-    ctx.fillRect(16, 22, 16, 2);
-    ctx.fillRect(16, 24, 18, 2);
-    ctx.fillRect(16, 26, 20, 2);
-    ctx.fillRect(18, 28, 20, 2);
-    ctx.fillRect(18, 30, 18, 2);
-    
-    // Eye
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(30, 20, 2, 2);
-    ctx.fillStyle = color;
-    
-    // Body (elongated)
-    ctx.fillRect(6, 32, 30, 2);
-    ctx.fillRect(4, 34, 32, 2);
-    ctx.fillRect(4, 36, 32, 2);
-    ctx.fillRect(6, 38, 28, 2);
-    
-    // Legs (running animation while ducking)
-    if (this.animFrame === 0) {
-      ctx.fillRect(8, 40, 4, 2);
-      ctx.fillRect(8, 42, 6, 2);
-      ctx.fillRect(26, 40, 4, 2);
-      ctx.fillRect(26, 42, 4, 2);
-    } else {
-      ctx.fillRect(10, 40, 4, 2);
-      ctx.fillRect(10, 42, 4, 2);
-      ctx.fillRect(24, 40, 4, 2);
-      ctx.fillRect(24, 42, 6, 2);
-    }
   }
 }

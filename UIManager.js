@@ -12,75 +12,32 @@ export default class UIManager {
   }
 
   drawMenu(ctx) {
+    const assets = this.game.assetManager;
+    if (!assets.loaded) return;
+    
     ctx.save();
     ctx.textAlign = 'center';
     
-    // Light semi-transparent overlay
-    ctx.fillStyle = "#f7f7f7";
-    ctx.globalAlpha = 0.95;
+    // dhhruv's menu background - simple white/gray background
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, this.game.logicalWidth, this.game.logicalHeight);
-    ctx.globalAlpha = 1;
     
-    // Title
+    // dhhruv's menu logic from lines 257-287
     ctx.fillStyle = "#535353";
-    ctx.font = "24px monospace";
-    ctx.fillText("DINO RUNNER", this.game.logicalWidth/2, 100);
-    ctx.font = "12px monospace";
-    ctx.fillText("Press SPACE to play", this.game.logicalWidth/2, 130);
+    ctx.font = "24px Arial"; // Changed to Arial to match dhhruv's font
+    ctx.fillText("Press any Key to Start", this.game.logicalWidth/2, this.game.logicalHeight/2);
     
-    // High score display
-    ctx.font = "14px monospace";
-    ctx.fillText("HI " + String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.logicalWidth/2, 170);
+    // High score display - dhhruv's format from lines 275-285
+    ctx.font = "20px Arial";
+    ctx.fillText("High Score : " + this.game.scoreManager.getFormattedHighScore(), this.game.logicalWidth/2, this.game.logicalHeight/2 + 50);
     
-    // Mute indicator and BGM toggle
-    ctx.font = "10px monospace";
-    const muteText = this.game.soundOn ? "🔊" : "🔇";
-    const bgmText = this.game.audioManager.bgmEnabled ? "♪" : "♬";
-    ctx.fillText(muteText + " Press M to toggle sound • " + bgmText + " Press B for music", this.game.logicalWidth/2, 200);
+    // Draw dino sprite in menu - dhhruv's logic line 286
+    const dinoSprite = assets.getAsset('dinoRun1');
+    if (dinoSprite) {
+      ctx.drawImage(dinoSprite, this.game.logicalWidth/2 - 20, this.game.logicalHeight/2 - 140);
+    }
     
     ctx.restore();
-
-    if (this.showingHighScore) {
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.fillStyle = "#f7f7f7";
-      ctx.globalAlpha = 0.95;
-      ctx.fillRect(0, 0, this.game.logicalWidth, this.game.logicalHeight);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = "#535353";
-      ctx.font = "20px monospace";
-      ctx.fillText("High Score", this.game.logicalWidth/2, 140);
-      ctx.font = "18px monospace";
-      ctx.fillText(String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.logicalWidth/2, 170);
-      ctx.font = "12px monospace";
-      ctx.fillText("Press any key to return", this.game.logicalWidth/2, 210);
-      ctx.restore();
-      this.handleMenuReturn();
-      return;
-    }
-    
-    if (this.showingControls) {
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.fillStyle = "#f7f7f7";
-      ctx.globalAlpha = 0.95;
-      ctx.fillRect(0, 0, this.game.logicalWidth, this.game.logicalHeight);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = "#535353";
-      ctx.font = "16px monospace";
-      ctx.fillText("Controls", this.game.logicalWidth/2, 120);
-      ctx.font = "12px monospace";
-      ctx.fillText("↑ or SPACE - Jump", this.game.logicalWidth/2, 150);
-      ctx.fillText("↓ - Duck", this.game.logicalWidth/2, 170);
-      ctx.fillText("M - Mute", this.game.logicalWidth/2, 190);
-      ctx.fillText("Press any key to return", this.game.logicalWidth/2, 220);
-      ctx.restore();
-      this.handleMenuReturn();
-      return;
-    }
-
-    // Mouse input for menu
-    this.handleMenuMouse();
   }
 
   handleMenuMouse() {
@@ -107,50 +64,52 @@ export default class UIManager {
   }
 
   drawHud(ctx) {
+    // dhhruv's HUD logic from lines 167-176 
     ctx.save();
-    ctx.font = "12px monospace";
+    ctx.font = "20px Arial"; // dhhruv uses freesansbold.ttf, Arial is close
     ctx.fillStyle = "#535353";
-    ctx.textAlign = "right";
-    
-    // Current score (right aligned, top right)
-    const scoreText = String(this.game.scoreManager.score).padStart(5, '0');
-    ctx.fillText(scoreText, this.game.logicalWidth - 20, 25);
-    
-    // High score (right aligned, below current score)
-    ctx.fillText("HI " + String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.logicalWidth - 20, 45);
-    
-    // Mute indicator (top left)
     ctx.textAlign = "left";
-    const muteText = this.game.soundOn ? "🔊" : "🔇";
-    const bgmText = this.game.audioManager.bgmEnabled ? "♪" : "";
-    ctx.fillText(muteText + " " + bgmText, 20, 25);
+    
+    // dhhruv's score format: "High Score: <highscore> Points: <points>"
+    const scoreText = "High Score: " + this.game.scoreManager.getFormattedHighScore() + 
+                     "  Points: " + this.game.scoreManager.getFormattedScore();
+    
+    // Position like dhhruv's - centered at (900, 40) scaled to our system  
+    ctx.textAlign = "center";
+    const centerX = 900 * (this.game.logicalWidth / 1100); // Scale from dhhruv's 1100px width
+    ctx.fillText(scoreText, centerX, 40);
     
     ctx.restore();
   }
 
   drawGameOver(ctx) {
+    const assets = this.game.assetManager;
+    if (!assets.loaded) return;
+    
     ctx.save();
     ctx.textAlign = "center";
     
-    // Light overlay for game over
-    ctx.fillStyle = "#f7f7f7";
-    ctx.globalAlpha = 0.9;
+    // dhhruv's game over logic from menu() function when death_count > 0 
+    // Use same background as menu
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, this.game.logicalWidth, this.game.logicalHeight);
-    ctx.globalAlpha = 1;
     
-    // Game Over text
     ctx.fillStyle = "#535353";
-    ctx.font = "20px monospace";
-    ctx.fillText("G A M E  O V E R", this.game.logicalWidth/2, 120);
+    ctx.font = "30px Arial";
+    ctx.fillText("Press any Key to Restart", this.game.logicalWidth/2, this.game.logicalHeight/2);
     
-    // Current and high scores
-    ctx.font = "14px monospace";
-    ctx.fillText(String(this.game.scoreManager.score).padStart(5, '0'), this.game.logicalWidth/2, 160);
-    ctx.fillText("HI " + String(this.game.scoreManager.highScore).padStart(5, '0'), this.game.logicalWidth/2, 180);
+    // Show current score - dhhruv's logic lines 263-266
+    ctx.font = "30px Arial";
+    ctx.fillText("Your Score: " + this.game.scoreManager.getFormattedScore(), this.game.logicalWidth/2, this.game.logicalHeight/2 + 50);
     
-    // Restart instruction
-    ctx.font = "12px monospace";
-    ctx.fillText("Press SPACE to restart", this.game.logicalWidth/2, 220);
+    // Show high score - dhhruv's logic lines 275-281  
+    ctx.fillText("High Score : " + this.game.scoreManager.getFormattedHighScore(), this.game.logicalWidth/2, this.game.logicalHeight/2 + 100);
+    
+    // Draw dino sprite - dhhruv draws RUNNING[0] sprite in menu
+    const dinoSprite = assets.getAsset('dinoRun1');
+    if (dinoSprite) {
+      ctx.drawImage(dinoSprite, this.game.logicalWidth/2 - 20, this.game.logicalHeight/2 - 140);
+    }
     
     ctx.restore();
 
