@@ -25,16 +25,17 @@ export default class Game {
     this.obstacles = [];
     this.ui = new UIManager(this);
 
-    // Difficulty
+    // Difficulty (Chrome-like)
     this.baseSpeed = 7;
     this.speed = this.baseSpeed;
-    this.level = 1;
     this.spawnTimer = 0;
     this.spawnInterval = 90;
+    this.lastMilestone = 0;
+    
     // Day/night cycle
     this.dayNight = false;
     this.cycleTimer = 0;
-    this.cycleInterval = 1000; // points
+    this.cycleInterval = 700; // points
 
     this.soundOn = this.scoreManager.getSettings().soundOn ?? true;
 
@@ -52,23 +53,22 @@ export default class Game {
     this.scoreManager.reset();
     this.player.reset();
     this.speed = this.baseSpeed;
-    this.level = 1;
     this.spawnTimer = 0;
     this.background.reset();
     this.dayNight = false;
     this.cycleTimer = 0;
+    this.lastMilestone = 0;
   }
 
   startGame() {
     this.reset();
     this.state = 'playing';
-    this.audioManager.playBgm();
+    // No background music in Chrome dino
   }
 
   gameOver() {
     this.state = 'gameover';
-    this.audioManager.stopBgm();
-    this.audioManager.play('gameover');
+    this.audioManager.play('collision');
     this.scoreManager.saveHighScore();
   }
 
@@ -105,20 +105,26 @@ export default class Game {
         }
       }
 
-      // Score & Difficulty
+      // Score & Difficulty (Chrome-like progression)
       this.scoreManager.update(dt, this.speed);
       const pts = this.scoreManager.score;
-      // Level up every 200 pts
-      if (Math.floor(pts/200) + 1 > this.level) {
-        this.level = Math.floor(pts/200) + 1;
-        this.speed += 0.7;
-        this.audioManager.play('levelup');
+      
+      // Speed increases by ~1 per 100 points (max ~14)
+      const newSpeed = Math.min(this.baseSpeed + Math.floor(pts / 100), 14);
+      if (newSpeed > this.speed) {
+        this.speed = newSpeed;
       }
-      // Day/night every 1000 pts
-      if (Math.floor(pts/this.cycleInterval) % 2 !== this.dayNight) {
+      
+      // Milestone sound every 100 points
+      if (pts > 0 && pts % 100 === 0 && pts !== this.lastMilestone) {
+        this.audioManager.play('milestone');
+        this.lastMilestone = pts;
+      }
+      
+      // Day/night every 700 pts (less frequent)
+      if (Math.floor(pts/700) % 2 !== this.dayNight) {
         this.dayNight = !this.dayNight;
         this.background.toggleDayNight(this.dayNight);
-        this.audioManager.play('cycle');
       }
     }
   }
@@ -131,15 +137,21 @@ export default class Game {
   }
 
   render() {
+    // Clear canvas once at the start of each frame
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    // Draw in proper order
     this.background.draw(this.ctx);
 
-    if (this.state === 'menu') {
-      this.ui.drawMenu(this.ctx);
-    } else if (this.state === 'playing') {
+    if (this.state === 'playing') {
+      // Draw obstacles behind player
       for (const obs of this.obstacles) obs.draw(this.ctx);
       this.player.draw(this.ctx);
       this.ui.drawHud(this.ctx);
+    } else if (this.state === 'menu') {
+      this.ui.drawMenu(this.ctx);
     } else if (this.state === 'gameover') {
+      // Draw obstacles and player for context
       for (const obs of this.obstacles) obs.draw(this.ctx);
       this.player.draw(this.ctx);
       this.ui.drawGameOver(this.ctx);

@@ -1,9 +1,7 @@
 const sounds = {
   jump: { freq: 880, duration: 0.14, type: 'square' },
-  collision: { freq: 100, duration: 0.22, type: 'sawtooth' },
-  levelup: { freq: 1320, duration: 0.10, type: 'triangle' },
-  cycle: { freq: 500, duration: 0.16, type: 'triangle' },
-  gameover: { freq: 200, duration: 0.4, type: 'triangle' }
+  collision: { freq: 150, duration: 0.3, type: 'sawtooth' },
+  milestone: { freq: 1320, duration: 0.12, type: 'triangle' }
 };
 
 export default class AudioManager {
@@ -11,18 +9,21 @@ export default class AudioManager {
     this.game = game;
     this.ctx = null;
     this.muted = !this.game.soundOn;
-    this.bgmOsc = null;
-    this.bgmGain = null;
+    this.lastSoundTime = {};
   }
 
   setMuted(state) {
     this.muted = state;
-    if (state) this.stopBgm();
-    else if (this.game.state === 'playing') this.playBgm();
   }
 
   play(name) {
     if (this.muted || !sounds[name]) return;
+    
+    // Debounce sounds to prevent overlapping
+    const now = Date.now();
+    if (this.lastSoundTime[name] && now - this.lastSoundTime[name] < 100) return;
+    this.lastSoundTime[name] = now;
+    
     this._beep(sounds[name].freq, sounds[name].duration, sounds[name].type);
   }
 
@@ -40,28 +41,12 @@ export default class AudioManager {
     g.gain.linearRampToValueAtTime(0, this.ctx.currentTime + duration);
   }
 
+  // Remove background music methods
   playBgm() {
-    if (this.muted || this.bgmOsc) return;
-    if (!window.AudioContext && !window.webkitAudioContext) return;
-    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    this.bgmOsc = this.ctx.createOscillator();
-    this.bgmGain = this.ctx.createGain();
-    this.bgmOsc.type = 'triangle';
-    this.bgmOsc.frequency.value = 96;
-    this.bgmGain.gain.value = 0.045;
-    this.bgmOsc.connect(this.bgmGain).connect(this.ctx.destination);
-    this.bgmOsc.start();
+    // No continuous background music in Chrome dino
   }
 
   stopBgm() {
-    if (this.bgmOsc) {
-      this.bgmOsc.stop();
-      this.bgmOsc.disconnect();
-      this.bgmOsc = null;
-    }
-    if (this.bgmGain) {
-      this.bgmGain.disconnect();
-      this.bgmGain = null;
-    }
+    // No continuous background music in Chrome dino
   }
 }
