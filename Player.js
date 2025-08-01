@@ -3,18 +3,19 @@ export default class Player {
     this.game = game;
     
     // dhhruv's exact player constants from chromedino.py lines 50-54
+    // Don't scale - keep original values but adjust for our canvas size
     this.X_POS = 80;
     this.Y_POS = 310;
     this.Y_POS_DUCK = 340;
     this.JUMP_VEL = 8.5;
     
-    // Convert to our coordinate system (dhhruv uses 600px height, we use 300px)
-    this.x = this.X_POS * (300 / 600); // Scale X position
-    this.groundY = this.Y_POS * (300 / 600); // Scale ground Y
-    this.duckY = this.Y_POS_DUCK * (300 / 600); // Scale duck Y
-    this.jumpVelocity = this.JUMP_VEL; // Keep jump velocity as-is
-    
+    // Use original positions but adjust for 300px height canvas
+    this.x = 80;
+    this.groundY = 200; // Adjusted to be visible in 300px height canvas
     this.y = this.groundY;
+    this.duckY = this.groundY + 30;
+    this.jumpVelocity = this.JUMP_VEL;
+    
     this.width = 44;
     this.height = 48;
     this.velocityY = 0;
@@ -85,8 +86,8 @@ export default class Player {
 
     // Jump physics - dhhruv's logic lines 95-100  
     if (this.dinoJump) {
-      this.y -= this.jumpVelocity * 4 * dt; // dhhruv multiplies by 4
-      this.jumpVelocity -= 0.8 * dt; // dhhruv's gravity application
+      this.y -= this.jumpVelocity * 4; // dhhruv multiplies by 4
+      this.jumpVelocity -= 0.8; // dhhruv's gravity application
       
       if (this.jumpVelocity < -this.JUMP_VEL) {
         this.dinoJump = false;
@@ -99,17 +100,17 @@ export default class Player {
 
     // Cooldown
     if (this.jumpCooldown > 0) {
-      this.jumpCooldown -= dt;
+      this.jumpCooldown -= 1;
     }
   }
 
   getHitbox() {
     // dhhruv's collision detection uses pygame rect collision
-    // We'll keep similar hitbox logic but adjust for our coordinate system
+    // Make hitbox smaller and more forgiving
     if (this.dinoDuck) {
-      return { x: this.x + 6, y: this.duckY, w: this.width - 12, h: 30 };
+      return { x: this.x + 10, y: this.duckY + 10, w: this.width - 20, h: 25 };
     }
-    return { x: this.x + 6, y: this.y, w: this.width - 12, h: this.height - 6 };
+    return { x: this.x + 10, y: this.y + 10, w: this.width - 20, h: this.height - 20 };
   }
 
   draw(ctx) {

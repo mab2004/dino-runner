@@ -11,20 +11,20 @@ export default class Obstacle {
     if (type === 'smallCactus') {
       // SmallCactus from lines 131-137
       this.variant = Math.floor(Math.random() * 3); // 0, 1, or 2
-      this.y = 325 * (300 / 600); // Scale Y position to our coordinate system
+      this.y = 220; // Position on ground
       this.width = 34; // Approximate width
       this.height = 70; // Approximate height
     } else if (type === 'largeCactus') {
       // LargeCactus from lines 140-146
       this.variant = Math.floor(Math.random() * 3); // 0, 1, or 2  
-      this.y = 300 * (300 / 600); // Scale Y position
+      this.y = 195; // Position on ground (higher than small cactus)
       this.width = 50; // Approximate width
       this.height = 100; // Approximate height
     } else if (type === 'bird') {
       // Bird from lines 149-158
       this.variant = 0; // Will be used for animation frame
-      // dhhruv's BIRD_HEIGHTS = [250, 290, 320] scaled to our system
-      const birdHeights = [250, 290, 320].map(h => h * (300 / 600));
+      // dhhruv's BIRD_HEIGHTS = [250, 290, 320] - adjust for our canvas
+      const birdHeights = [100, 140, 180]; // Flying heights in our 300px canvas
       this.y = birdHeights[Math.floor(Math.random() * birdHeights.length)];
       this.width = 92; // Approximate width
       this.height = 80; // Approximate height

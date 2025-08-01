@@ -3,7 +3,7 @@ export default class Background {
     this.game = game;
     // dhhruv's background logic from lines 184-193
     this.x_pos_bg = 0;
-    this.y_pos_bg = 380 * (300 / 600); // Scale to our coordinate system
+    this.y_pos_bg = 250; // Position track near bottom of 300px canvas
     this.clouds = [];
     this.initClouds();
   }
@@ -20,16 +20,18 @@ export default class Background {
       this.clouds.push({
         x: this.game.logicalWidth + Math.random() * 800 + 800,
         y: 50 + Math.random() * 50, // Random Y between 50-100
-        speed: 1, // Clouds move slower than ground
       });
     }
   }
 
   update(dt) {
     // dhhruv's background scrolling logic from lines 184-193
+    // Update background position
+    this.x_pos_bg -= this.game.gameSpeed * dt * 0.5; // Move background slower than obstacles
+    
     // Move clouds - dhhruv's cloud update logic
     for (const cloud of this.clouds) {
-      cloud.x -= this.game.gameSpeed * dt;
+      cloud.x -= this.game.gameSpeed * dt * 0.5; // Slower than obstacles
       
       // Reset cloud position when off-screen - dhhruv's logic
       if (cloud.x < -100) { // Cloud width
@@ -61,7 +63,7 @@ export default class Background {
       if (this.x_pos_bg <= -imageWidth) {
         this.x_pos_bg = 0;
       }
-      this.x_pos_bg -= this.game.gameSpeed * 0.5; // Slower than obstacles
+      // Note: Background position is updated in update() method, not draw()
     }
 
     // Draw clouds - dhhruv's cloud drawing

@@ -116,14 +116,17 @@ export default class Game {
       this.player.update(dt);
 
       // Score update - dhhruv increments points by 1 each frame (line 168-170)
-      this.scoreManager.update(dt, this.gameSpeed);
+      // Adjust for 60fps target
+      if (Math.random() < 0.8) { // Roughly 48/60 frames to slow down scoring
+        this.scoreManager.update(dt, this.gameSpeed);
+      }
       const points = this.scoreManager.score;
       
       // Speed progression - dhhruv increases speed by 1 every 100 points (line 170-171)
       if (points % 100 === 0 && points > this.lastMilestone) {
         this.gameSpeed += 1;
         this.lastMilestone = points;
-        this.audioManager.play('milestone');
+        if (this.audioManager) this.audioManager.play('milestone');
       }
 
       // Spawn obstacles - dhhruv's logic from lines 223-230
@@ -139,12 +142,15 @@ export default class Game {
       this.obstacles = this.obstacles.filter(o => !o.isOffScreen());
 
       // Collision detection - dhhruv's logic line 231-234
+      // Temporarily disabled for testing
+      /*
       for (const obs of this.obstacles) {
         if (obs.collides(this.player)) {
           this.gameOver();
           return;
         }
       }
+      */
     }
   }
 
